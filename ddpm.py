@@ -13,6 +13,10 @@ import numpy as np
 import datasets
 from positional_embeddings import PositionalEmbedding
 
+torch.manual_seed(42)
+np.random.seed(42)
+
+
 
 class Block(nn.Module):
     def __init__(self, size: int):
@@ -152,9 +156,22 @@ if __name__ == "__main__":
     parser.add_argument("--save_images_step", type=int, default=1)
     config = parser.parse_args()
 
-    dataset = datasets.get_dataset(config.dataset)
-    dataloader = DataLoader(
-        dataset, batch_size=config.train_batch_size, shuffle=True, drop_last=True)
+    # dataset = datasets.get_dataset(config.dataset)
+    # dataloader = DataLoader(
+    #     dataset, batch_size=config.train_batch_size, shuffle=True, drop_last=True)
+
+    from torch.utils.data import random_split
+
+    dataset = datasets.get_dataset(config.dataset, n=12000)  # explicitly get 12k samples
+    train_len = int(0.8 * len(dataset))
+    val_len = len(dataset) - train_len
+    train_dataset, val_dataset = random_split(dataset, [train_len, val_len])
+
+    train_loader = DataLoader(
+        train_dataset, batch_size=config.train_batch_size, shuffle=True, drop_last=True)
+    val_loader = DataLoader(
+        val_dataset, batch_size=config.eval_batch_size, shuffle=False)
+
 
     model = MLP(
         hidden_size=config.hidden_size,
@@ -176,11 +193,13 @@ if __name__ == "__main__":
     frames = []
     losses = []
     print("Training model...")
+    val_losses_total = []
+
     for epoch in range(config.num_epochs):
         model.train()
         progress_bar = tqdm(total=len(dataloader))
         progress_bar.set_description(f"Epoch {epoch}")
-        for step, batch in enumerate(dataloader):
+        for step, batch in enumerate(train_loader):
             batch = batch[0]
             noise = torch.randn(batch.shape)
             timesteps = torch.randint(
@@ -202,6 +221,25 @@ if __name__ == "__main__":
             progress_bar.set_postfix(**logs)
             global_step += 1
         progress_bar.close()
+        # Validation loop (once per epoch)
+        model.eval()
+        val_losses_epoch = []
+
+        with torch.no_grad():
+        for val_batch in val_loader:
+            val_batch = val_batch[0]  # get the data from the batch
+            noise = torch.randn(val_batch.shape)  # create random noise
+            timesteps = torch.randint(0, noise_scheduler.num_timesteps, (val_batch.shape[0],)).long()
+        
+            noisy = noise_scheduler.add_noise(val_batch, noise, timesteps)  # add noise
+            noise_pred = model(noisy, timesteps)  # model tries to predict the noise
+            val_loss = F.mse_loss(noise_pred, noise)  # MSE loss on validation
+            val_losses_epoch.append(val_loss.item())  # store individual batch loss
+
+        avg_val_loss = sum(val_losses_epoch) / len(val_losses_epoch)  # average val loss for epoch
+        print(f"Validation loss: {avg_val_loss}")
+        val_losses_total.append(avg_val_loss)  # store it for later saving
+
 
         if epoch % config.save_images_step == 0 or epoch == config.num_epochs - 1:
             # generate data with the model to later visualize the learning process
@@ -239,3 +277,7 @@ if __name__ == "__main__":
 
     print("Saving frames...")
     np.save(f"{outdir}/frames.npy", frames)
+
+    print("Saving validation loss...")
+    np.save(f"{outdir}/val_loss.npy", np.array(val_losses_total))
+
