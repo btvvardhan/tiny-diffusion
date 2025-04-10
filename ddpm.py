@@ -197,7 +197,7 @@ if __name__ == "__main__":
 
     for epoch in range(config.num_epochs):
         model.train()
-        progress_bar = tqdm(total=len(dataloader))
+        progress_bar = tqdm(total=len(train_loader))
         progress_bar.set_description(f"Epoch {epoch}")
         for step, batch in enumerate(train_loader):
             batch = batch[0]
