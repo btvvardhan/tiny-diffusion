@@ -6,7 +6,7 @@ from sklearn.datasets import make_moons
 from torch.utils.data import TensorDataset
 
 
-def moons_dataset(n=8000):
+def moons_dataset(n=12000):
     X, _ = make_moons(n_samples=n, random_state=42, noise=0.03)
     X[:, 0] = (X[:, 0] + 0.3) * 2 - 1
     X[:, 1] = (X[:, 1] + 0.3) * 3 - 1
@@ -22,7 +22,7 @@ def line_dataset(n=12000):
     return TensorDataset(torch.from_numpy(X.astype(np.float32)))
 
 
-def circle_dataset(n=8000):
+def circle_dataset(n=12000):
     rng = np.random.default_rng(42)
     x = np.round(rng.uniform(-0.5, 0.5, n)/2, 1)*2
     y = np.round(rng.uniform(-0.5, 0.5, n)/2, 1)*2
@@ -38,7 +38,7 @@ def circle_dataset(n=8000):
     return TensorDataset(torch.from_numpy(X.astype(np.float32)))
 
 
-def dino_dataset(n=8000):
+def dino_dataset(n=12000):
     df = pd.read_csv("static/DatasaurusDozen.tsv", sep="\t")
     df = df[df["dataset"] == "dino"]
 
@@ -54,7 +54,7 @@ def dino_dataset(n=8000):
     return TensorDataset(torch.from_numpy(X.astype(np.float32)))
 
 
-def get_dataset(name, n=8000):
+def get_dataset(name, n=12000):
     if name == "moons":
         return moons_dataset(n)
     elif name == "dino":
