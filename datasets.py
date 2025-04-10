@@ -13,7 +13,7 @@ def moons_dataset(n=8000):
     return TensorDataset(torch.from_numpy(X.astype(np.float32)))
 
 
-def line_dataset(n=8000):
+def line_dataset(n=12000):
     rng = np.random.default_rng(42)
     x = rng.uniform(-0.5, 0.5, n)
     y = rng.uniform(-1, 1, n)
