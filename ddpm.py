@@ -226,15 +226,15 @@ if __name__ == "__main__":
         val_losses_epoch = []
 
         with torch.no_grad():
-        for val_batch in val_loader:
-            val_batch = val_batch[0]  # get the data from the batch
-            noise = torch.randn(val_batch.shape)  # create random noise
-            timesteps = torch.randint(0, noise_scheduler.num_timesteps, (val_batch.shape[0],)).long()
+            for val_batch in val_loader:
+                val_batch = val_batch[0]  # get the data from the batch
+                noise = torch.randn(val_batch.shape)  # create random noise
+                timesteps = torch.randint(0, noise_scheduler.num_timesteps, (val_batch.shape[0],)).long()
         
-            noisy = noise_scheduler.add_noise(val_batch, noise, timesteps)  # add noise
-            noise_pred = model(noisy, timesteps)  # model tries to predict the noise
-            val_loss = F.mse_loss(noise_pred, noise)  # MSE loss on validation
-            val_losses_epoch.append(val_loss.item())  # store individual batch loss
+                noisy = noise_scheduler.add_noise(val_batch, noise, timesteps)  # add noise
+                noise_pred = model(noisy, timesteps)  # model tries to predict the noise
+                val_loss = F.mse_loss(noise_pred, noise)  # MSE loss on validation
+                val_losses_epoch.append(val_loss.item())  # store individual batch loss
 
         avg_val_loss = sum(val_losses_epoch) / len(val_losses_epoch)  # average val loss for epoch
         print(f"Validation loss: {avg_val_loss}")
